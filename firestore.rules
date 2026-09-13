@@ -1,0 +1,251 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isRootAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'felipegponce@gmail.com' ||
+        (request.auth.token.email != null && request.auth.token.email.matches('(?i)^felipegponce@gmail\\.com$'))
+      );
+    }
+
+    function userDocExists() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isApprovedUser() {
+      return isRootAdmin() || (
+        userDocExists() &&
+        getUserData().status != 'pending' &&
+        getUserData().status != 'rejected' &&
+        getUserData().status != 'suspended' &&
+        (getUserData().active == true || !('active' in getUserData()))
+      );
+    }
+
+    function getUserRole() {
+      return isRootAdmin()
+        ? 'admin'
+        : (userDocExists() ? getUserData().role : 'visualizador');
+    }
+
+    function isAdmin() {
+      return isRootAdmin() || (isApprovedUser() && getUserRole() == 'admin');
+    }
+
+    function isPresidencia() {
+      return isAdmin() || (
+        isApprovedUser() && (
+          getUserRole() == 'presidente' ||
+          getUserRole() == 'vice_presidente'
+        )
+      );
+    }
+
+    function isTesourariaGeral() {
+      return isAdmin() || (
+        isApprovedUser() && (
+          getUserRole() == 'tesoureiro_1' ||
+          getUserRole() == 'tesouraria'
+        )
+      );
+    }
+
+    function isTesourariaEntradas() {
+      return isTesourariaGeral() || (
+        isApprovedUser() && getUserRole() == 'tesoureiro_2'
+      );
+    }
+
+    function isTesourariaSaidas() {
+      return isTesourariaGeral() || (
+        isApprovedUser() && getUserRole() == 'tesoureiro_3'
+      );
+    }
+
+    function isAnyTesouraria() {
+      return isTesourariaGeral() || isTesourariaEntradas() || isTesourariaSaidas();
+    }
+
+    function isEventosPatrimonio() {
+      return isAdmin() || (
+        isApprovedUser() && (
+          getUserRole() == 'eventos_patrimonio' ||
+          getUserRole() == 'eventos' ||
+          getUserRole() == 'diretor_eventos' ||
+          getUserRole() == 'comissao_formatura'
+        )
+      );
+    }
+
+    // Default deny for all unspecified collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Health-check / test connection document
+    match /test/{testId} {
+      allow read, write: if true;
+    }
+
+    // 1. Coleção de Usuários e Perfis
+    match /users/{userId} {
+      // Usuário pending só pode ler o próprio documento. Usuários aprovados e admins podem consultar a lista.
+      allow read: if isSignedIn() && (request.auth.uid == userId || isApprovedUser());
+      
+      // Auto-registro inicial do próprio usuário:
+      // - Root admin pode criar seu registro inicial com papel de administrador aprovado (bootstrap seguro)
+      // - Novos usuários comuns são registrados automaticamente como 'visualizador' com status 'approved' (ou 'pending')
+      // - Administrador pode cadastrar novos perfis se necessário
+      allow create: if isSignedIn() && (
+        (
+          request.auth.uid == userId && (
+            (isRootAdmin() && request.resource.data.role == 'admin' && request.resource.data.status == 'approved') ||
+            (request.resource.data.role == 'visualizador' && (request.resource.data.status == 'approved' || request.resource.data.status == 'pending'))
+          )
+        ) ||
+        isAdmin()
+      );
+      
+      // Administrador pode atualizar qualquer usuário (aprovar, alterar função, suspender)
+      // Usuário comum só pode atualizar dados de apresentação pessoal, nunca role, status, active, uid ou email
+      allow update: if isSignedIn() && (
+        isAdmin() || (
+          request.auth.uid == userId &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status', 'active', 'uid', 'email'])
+        )
+      );
+      
+      // Apenas administrador pode excluir perfis
+      allow delete: if isAdmin();
+    }
+
+    // 2. Comissão Oficial (Coleção Administrativa Exclusiva - isolada de users)
+    // Leitura aberta para transparência pública e prestação de contas da turma
+    match /commissionMembers/{memberId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 3. Transações e Lançamentos Contábeis
+    // Leitura aberta para transparência pública e prestação de contas da turma
+    match /transactions/{txId} {
+      allow read: if true;
+      allow create, update: if isAnyTesouraria() || isEventosPatrimonio();
+      allow delete: if isTesourariaGeral();
+    }
+
+    // 4. Documentos e Comprovantes (Central de Documentos & OCR)
+    match /documents/{docId} {
+      allow read: if true;
+      allow create, update: if isAnyTesouraria() || isEventosPatrimonio();
+      allow delete: if isTesourariaGeral();
+    }
+
+    // 5. Categorias Contábeis
+    match /categories/{catId} {
+      allow read: if true;
+      allow write: if isTesourariaGeral();
+    }
+
+    // 6. Mensalidades
+    match /monthlyFees/{feeId} {
+      allow read: if true;
+      allow write: if isTesourariaEntradas();
+    }
+
+    // 7. Rifas
+    match /raffles/{raffleId} {
+      allow read: if true;
+      allow write: if isTesourariaEntradas();
+    }
+
+    // 8. Pedidos de Camisas
+    match /shirtOrders/{orderId} {
+      allow read: if true;
+      allow write: if isAnyTesouraria() || isEventosPatrimonio();
+    }
+
+    // 9. Pedidos de Abrigamento/Agasalhos
+    match /jacketOrders/{orderId} {
+      allow read: if true;
+      allow write: if isAnyTesouraria() || isEventosPatrimonio();
+    }
+
+    // 10. Pedidos de Uniformes
+    match /uniformOrders/{orderId} {
+      allow read: if true;
+      allow write: if isAnyTesouraria() || isEventosPatrimonio();
+    }
+
+    // 11. Eventos do Grêmio (Festa Julina, Formatura, Confraternizações)
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isEventosPatrimonio() || isPresidencia();
+    }
+
+    // 12. Planos Futuros e Metas
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isEventosPatrimonio() || isPresidencia();
+    }
+
+    // 13. Contratos e Prestadores de Serviços
+    match /contracts/{contractId} {
+      allow read: if true;
+      allow write: if isTesourariaGeral() || isPresidencia();
+    }
+
+    // 14. Fornecedores e Orçamentos Comparativos
+    match /suppliers/{supplierId} {
+      allow read: if true;
+      allow write: if isAnyTesouraria() || isEventosPatrimonio();
+    }
+
+    // 15. Alertas de Auditoria
+    match /auditAlerts/{alertId} {
+      allow read: if true;
+      allow write: if isAnyTesouraria() || isPresidencia();
+    }
+
+    // 16. Trilha de Auditoria (Logs)
+    match /auditLogs/{logId} {
+      allow read: if isApprovedUser();
+      allow create: if isApprovedUser() || isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // 17. Histórico de Sincronizações (Sync Jobs)
+    match /syncJobs/{jobId} {
+      allow read: if true;
+      allow write: if isTesourariaGeral() || isPresidencia();
+    }
+
+    // 18. Regras de Classificação Automática
+    match /classificationRules/{ruleId} {
+      allow read: if true;
+      allow write: if isTesourariaGeral();
+    }
+
+    // 19. Configurações de Sistema, Migração e Metadados
+    match /system/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() || isTesourariaGeral();
+    }
+
+    // 20. Documento de transição (gremio_state/main)
+    match /gremio_state/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

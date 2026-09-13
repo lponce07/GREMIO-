@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+:root {
+  --military-primary: #4B5320;
+  --military-accent: #D4AF37;
+  --military-dark: #1A2421;
+  --military-canvas: #F0F2F0;
+  --military-radius: 4px;
+}
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--military-canvas, #F0F2F0);
+    color: #1e293b;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .font-institutional {
+    font-family: 'Cinzel', Georgia, serif;
+  }
+}
+
+/* Geometric Balance Theme Colors (Reactive to Admin Settings) */
+.bg-military-dark {
+  background-color: var(--military-dark, #1A2421);
+}
+.bg-military-olive {
+  background-color: var(--military-primary, #4B5320);
+}
+.bg-military-gold {
+  background-color: var(--military-accent, #D4AF37);
+}
+.bg-canvas-geometric {
+  background-color: var(--military-canvas, #F0F2F0);
+}
+.border-military-gold {
+  border-color: var(--military-accent, #D4AF37);
+}
+.border-military-olive {
+  border-color: var(--military-primary, #4B5320);
+}
+.text-military-gold {
+  color: var(--military-accent, #D4AF37);
+}
+.text-military-olive {
+  color: var(--military-primary, #4B5320);
+}
+.text-military-dark {
+  color: var(--military-dark, #1A2421);
+}
+
+/* Custom rounded corners driven by theme */
+.rounded-theme {
+  border-radius: var(--military-radius, 4px);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+}

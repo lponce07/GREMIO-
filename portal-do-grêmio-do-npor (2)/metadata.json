@@ -1,0 +1,6 @@
+{
+  "name": "Portal do Grêmio do NPOR",
+  "description": "Sistema de gestão administrativa, financeira, eventos, formatura e fiscalização com prestação de contas do Grêmio do NPOR.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

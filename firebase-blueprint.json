@@ -1,0 +1,174 @@
+{
+  "entities": {
+    "testDoc": {
+      "title": "Test Connection Document",
+      "description": "Used to verify Firestore connectivity on app boot",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Connectivity test status"
+        }
+      }
+    },
+    "userProfile": {
+      "title": "User Profile",
+      "description": "User profile data and role permissions",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name"
+        },
+        "warName": {
+          "type": "string",
+          "description": "Military war name or rank"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "tesouraria", "eventos", "visualizador", "diretor_eventos", "comissao_formatura", "aluno", "instrutor_fiscal", "membro_consulta", "visitante_publico"],
+          "description": "Access control profile"
+        },
+        "department": {
+          "type": "string",
+          "description": "Assigned unit or department"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User profile photo URL"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "Last login timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "gremioState": {
+      "title": "Gremio State Document",
+      "description": "Main application data store for Gremio NPOR",
+      "type": "object",
+      "properties": {
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp"
+        }
+      }
+    },
+    "commissionMember": {
+      "title": "Commission Member",
+      "description": "Administrative records of the Official Commission",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the commission member"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name or war name of the official"
+        },
+        "position": {
+          "type": "string",
+          "description": "Administrative commission title"
+        },
+        "role": {
+          "type": "string",
+          "description": "System access control role"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed department or responsibility"
+        },
+        "linkedUserUid": {
+          "type": "string",
+          "description": "Linked Firebase Auth UID if associated"
+        },
+        "linkedEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Linked Google account email"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the member is active in the commission"
+        }
+      },
+      "required": ["id", "name", "position", "role"]
+    },
+    "systemConfig": {
+      "title": "System Configuration and Theme",
+      "description": "System settings, identity, theme and visual interface customization",
+      "type": "object",
+      "properties": {
+        "gremioName": {
+          "type": "string",
+          "description": "Official name of the Gremio"
+        },
+        "turmaName": {
+          "type": "string",
+          "description": "Class name or moniker"
+        },
+        "unitName": {
+          "type": "string",
+          "description": "Military Battalion or Unit name"
+        },
+        "year": {
+          "type": "string",
+          "description": "Year of training"
+        },
+        "logoUrl": {
+          "type": "string",
+          "description": "Custom logo or insignia image URL or base64 data"
+        },
+        "theme": {
+          "type": "string",
+          "description": "Serialized theme configuration object"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/test/{testId}": {
+      "schema": "testDoc",
+      "description": "Collection for checking Firestore connectivity on application boot"
+    },
+    "/users/{userId}": {
+      "schema": "userProfile",
+      "description": "User profile documents"
+    },
+    "/commissionMembers/{memberId}": {
+      "schema": "commissionMember",
+      "description": "Administrative official commission members"
+    },
+    "/system/{docId}": {
+      "schema": "systemConfig",
+      "description": "System configuration, theme, and visual interface settings"
+    },
+    "/gremio_state/{docId}": {
+      "schema": "gremioState",
+      "description": "Application state documents in Firestore"
+    }
+  }
+}
