@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #F0F2F0;
+    color: #1e293b;
+  }
+  .font-institutional {
+    font-family: 'Cinzel', Georgia, serif;
+  }
+}
+
+/* Geometric Balance Theme Colors */
+.bg-military-dark {
+  background-color: #1A2421;
+}
+.bg-military-olive {
+  background-color: #4B5320;
+}
+.bg-military-gold {
+  background-color: #D4AF37;
+}
+.bg-canvas-geometric {
+  background-color: #F0F2F0;
+}
+.border-military-gold {
+  border-color: #D4AF37;
+}
+.border-military-olive {
+  border-color: #4B5320;
+}
+.text-military-gold {
+  color: #D4AF37;
+}
+.text-military-olive {
+  color: #4B5320;
+}
+.text-military-dark {
+  color: #1A2421;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+}
